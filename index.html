@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CKRPRO AI</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+body{
+    margin:0;
+    padding:0;
+    background:#0b0b16;
+    color:white;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    font-family:sans-serif;
+}
+header{
+    background:#1a1a2e;
+    color:#7f00ff;
+    padding:14px;
+    text-align:center;
+    font-size:1.6em;
+    font-weight:bold;
+    font-family:'Orbitron', sans-serif;
+    letter-spacing:1px;
+}
+#chat{
+    flex:1;
+    overflow-y:auto;
+    padding:10px;
+    font-size:1em;
+}
+.user{
+    color:#00ffcc;
+    margin:6px 0;
+}
+.ai{
+    color:#c7a4ff;
+    margin:6px 0;
+    white-space:pre-wrap;
+}
+#input-container{
+    display:flex;
+    padding:8px;
+    background:#1a1a2e;
+}
+#msg{
+    flex:1;
+    padding:12px;
+    border:2px solid #7f00ff;
+    border-radius:8px;
+    background:#0b0b16;
+    color:white;
+    font-size:1em;
+    outline:none;
+}
+#send-btn{
+    padding:12px 18px;
+    margin-left:8px;
+    background:#7f00ff;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+<header>CKRPRO AI</header>
+
+<div id="chat"></div>
+
+<div id="input-container">
+<input id="msg" type="text" placeholder="Type your message..." />
+<button id="send-btn" onclick="send()">Send</button>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const OWNER = "CKR UNKNOWN";
+const MODEL = "llama-3.1-8b-instant";
+const GROQ_API_KEY = "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";
+
+/* ================= SYSTEM PROMPT ================= */
+function systemPrompt(){
+    const now = new Date().toISOString().replace("T"," ").slice(0,19);
+    return `
+You are CKRPRO AI.
+
+Owner: ${OWNER}
+
+Identity:
+- Text-only AI
+- No memory, no database
+- Pure API based
+- UI is ChatGPT-style
+
+Languages:
+- Nepali (primary)
+- English (technical)
+- Hindi, Bengali, Chinese (support if user uses)
+
+CORE RULE (VERY IMPORTANT):
+- NEVER reply in a single paragraph for commands or scripts
+- ALWAYS explain step-by-step and line-by-line
+- Use bullet points
+- Be beginner friendly
+- Use Nepali + English mix
+- Replies must be copy-friendly like ChatGPT
+
+Line-by-Line Explain Mode (DEFAULT):
+1) Show command/code first
+2) Explain each line separately
+3) Simple Nepali explanation
+4) Safety note only if needed
+5) Never say "you did not specify"
+
+Cybersecurity:
+- Educational & ethical learning only
+- No illegal instructions
+
+Owner Rule:
+- If asked about owner → reply exactly: "Owner is CKR UNKNOWN"
+
+Current time: ${now}
+`;
+}
+
+/* ================= UI LOGIC ================= */
+const chat = document.getElementById("chat");
+const msg = document.getElementById("msg");
+
+async function send(){
+    if(!msg.value) return;
+
+    const userText = msg.value;
+    chat.innerHTML += `<div class="user">You: ${userText}</div>`;
+    msg.value = "";
+
+    const body = {
+        model: MODEL,
+        messages: [
+            { role: "system", content: systemPrompt() },
+            { role: "user", content: userText }
+        ],
+        temperature: 0.3
+    };
+
+    try{
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json",
+                "Authorization":"Bearer " + GROQ_API_KEY
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        const reply = data.choices[0].message.content;
+
+        chat.innerHTML += `<div class="ai">AI:\n${reply}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+
+    }catch(e){
+        chat.innerHTML += `<div class="ai">Error: ${e}</div>`;
+    }
+}
+
+msg.addEventListener("keypress", e=>{
+    if(e.key === "Enter") send();
+});
+</script>
+
+</body>
+</html>
